@@ -9,7 +9,7 @@ import bs4
 stopwords = []
 with open(pathlib.Path("stopwords.txt"), "r", encoding="utf-8") as file:
     for line in file:
-        stopwords.append(line)
+        stopwords.append(line.replace("\n", ""))
 
 # Open and read from one HTML document at a time
 for line in sys.stdin:
@@ -29,7 +29,6 @@ for line in sys.stdin:
     # Parse text from document
     text = soup.text
 
-    # FIXME: Data preprocessing and output
     # Clean input
     text = re.sub(r"[^a-zA-Z0-9 ]+", "", text)
     text = text.casefold()

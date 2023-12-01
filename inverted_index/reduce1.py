@@ -4,15 +4,21 @@ import sys
 import itertools
 from math import log10
 
+
 def calc_idf(key, group, doc_tot):
     """Reduce one group."""
     doc_count = float(0)
-    docs = ()
+    docs = {}
     for doc_id in group:
-        docs = docs + (doc_id,)
-        doc_count += 1
+        doc_id = doc_id.partition("\t")[2][:-1]
+        if doc_id in docs:
+            docs[doc_id] += 1
+        else:
+            docs[doc_id] = 1
+            doc_count += 1
     idf = log10(doc_tot / doc_count)
-    print(f"{key} {idf}")
+    for doc_id in sorted(docs.keys()):
+        print(f"{(key, idf, doc_id)}\t{docs[doc_id]}")
 
 
 def keyfunc(line):
