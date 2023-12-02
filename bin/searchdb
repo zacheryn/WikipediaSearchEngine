@@ -22,7 +22,7 @@ case $1 in
       echo "Error: database already exists"
       exit 1
     fi
-    mkdir -p var/uploads
+    mkdir -p var/
     sqlite3 var/search.sqlite3 < search_server/search/sql/search.sql
     ;;
 
