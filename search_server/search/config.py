@@ -17,7 +17,7 @@ SEARCH_INDEX_SEGMENT_API_URLS = [
 ]
 
 # File root
-SEARCH_ROOT = pathlib.Path(__file__).resolve().parent.parent
+SEARCH_ROOT = pathlib.Path(__file__).resolve().parent.parent.parent
 
-# Database file is var/insta485.sqlite3
-DATABASE_FILENAME = SEARCH_ROOT/'var'/'insta485.sqlite3'
+# Database file is var/search.sqlite3
+DATABASE_FILENAME = SEARCH_ROOT/'var'/'search.sqlite3'

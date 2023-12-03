@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ask485?</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css?family=Montserrat" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
+</head>
+<body>
+    <div class="feed">
+        <div class="ask485">
+            <h1>ask485?</h1>
+        </div>
+        <form action="/" method="GET" class="search_bar">
+            <input type="text" name="q" value="{{ query }}" placeholder="Ask me anything!"/>
+            <div class="pagerank_weight">PageRank Weight</div>
+            <input type="range" name="w" value="{{ weight }}" min="0" max="1" step="0.01"/>
+            <input type="submit" value="Search"/>
+        </form>
+        {% if query_made %}
+            <div class="docs">
+                {% if top|length == 0 %}
+                    <div class="no_results">No search results found!</div>
+                {% else %}
+                    {% for doc in top %}
+                        <a class="doc_url" href="{{ doc['url'] }}">
+                            {{ doc['url'] }}
+                        </a>
+                        <div class="doc_title">
+                            {{ doc['title'] }}
+                        </div>
+                        <div class="doc_summary">
+                            {{ doc['summary'] }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+</body>
+</html>

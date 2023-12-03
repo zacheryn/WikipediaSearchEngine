@@ -1,15 +1,19 @@
 """Search page with server-side dynamics."""
-import flask
 from threading import Thread, Lock
-from heapq import merge
+import flask
 import requests
 import search
 
 
 def base():
     """Return the base homepage (no query made)."""
-    context = {}
-    return flask.render_template("main.html", **context)
+    context = {
+        "query_made": False,
+        "top": [],
+        "query": "",
+        "weight": 0.5
+    }
+    return flask.render_template("results.html", **context)
 
 
 def call_api(results: list, url: str, query: str, weight: float, lock: Lock):
@@ -18,14 +22,41 @@ def call_api(results: list, url: str, query: str, weight: float, lock: Lock):
         "q": query,
         "w": weight
     }
-    r = requests.get(url, params=payload)
-    with lock:
+    r = requests.get(url, params=payload, timeout=10)
+    with lock():
         results.append(r.json()["hits"])
 
 
-def keyfunc(elt):
-    """Key function for heapq merge."""
-    return elt["score"]
+def merge_docs(results: list) -> list:
+    """Combine the three lists in results."""
+    i = 0
+    j = 0
+    tmp_top = []
+    while i < len(results[0]) and j < len(results[1]):
+        if results[0][i]["score"] > results[1][j]["score"]:
+            tmp_top.append(results[0][i])
+            i += 1
+        else:
+            tmp_top.append(results[1][j])
+            j += 1
+    tmp_top = tmp_top + results[0][i:] + results[1][j:]
+    if len(tmp_top) > 10:
+        tmp_top = tmp_top[:10]
+    i = 0
+    j = 0
+    top = []
+    while i < len(tmp_top) and j < len(results[2]):
+        if tmp_top[i]["score"] > results[2][j]["score"]:
+            top.append(tmp_top[i])
+            i += 1
+        else:
+            top.append(results[2][j])
+            j += 1
+    top = top + tmp_top[i:] + results[2][j:]
+    if len(top) > 10:
+        top = top[:10]
+
+    return top
 
 
 @search.app.route("/")
@@ -36,8 +67,8 @@ def index():
     # If no query made, return the homepage
     if query is None:
         return base()
-    
-    weight = flask.request.args.get("w", type=float)
+
+    weight = flask.request.args.get("w", type=float, default=0.5)
 
     # Call APIs across multiple threads for speed
     results = []
@@ -45,7 +76,7 @@ def index():
     lock = Lock
     for url in search.app.config["SEARCH_INDEX_SEGMENT_API_URLS"]:
         t = Thread(target=call_api, args=[results, url, query, weight, lock])
-        t.run()
+        t.start()
         threads.append(t)
 
     # Join API call threads
@@ -53,9 +84,7 @@ def index():
         t.join()
 
     # merge the results
-    top = list(merge(results[0], results[1], results[2], key=keyfunc))
-    if len(top) > 10:
-        top = top[:10]
+    top = merge_docs(results)
 
     # Connect to database
     connection = search.model.get_db()
@@ -70,12 +99,16 @@ def index():
         )
         details = cur.fetchone()
         top[i]["title"] = details["title"]
-        top[i]["summary"] = details["summary"]
+        top[i]["summary"] = details["summary"] if details["summary"]\
+            != "" else "No summary available"
         top[i]["url"] = details["url"]
 
     # Set up context
     context = {
-        "top": top
+        "query_made": True,
+        "top": top,
+        "query": query,
+        "weight": weight
     }
 
     # Return template
